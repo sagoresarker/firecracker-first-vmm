@@ -8,7 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, Bridge_ipAddress string) error {
+func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, Bridge_ipAddress, bridge_gateway_ip string) error {
 	if mongoClient == nil {
 		log.Fatal("MongoDB client not initialized.")
 		return nil
@@ -25,6 +25,7 @@ func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string,
 		{Key: "mac_address1", Value: mac_address1},
 		{Key: "mac_address2", Value: mac_address2},
 		{Key: "Bridge_ipAddress", Value: Bridge_ipAddress},
+		{Key: "bridge_gateway_ip", Value: bridge_gateway_ip},
 		{Key: "created_at", Value: time.Now()},
 	}
 

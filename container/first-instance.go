@@ -35,7 +35,7 @@ func LaunchFirstInstance(user_id, bridge_name, tapName1, tapName2 string) {
 
 	socket_path := user_id + "/tmp/firecracker1.sock"
 
-	database.SaveVMsDetails(user_id, bridge_name, tapName1, tapName2, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, bridge_ip_without_mask.String())
+	database.SaveVMsDetails(user_id, bridge_name, tapName1, tapName2, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, bridge_ip_without_mask.String(), bridge_gateway_ip)
 
 	launchVM(tapName1, vm1_eth0_ip, mac_address1, bridge_ip_without_mask.String(), bridge_gateway_ip, socket_path)
 
