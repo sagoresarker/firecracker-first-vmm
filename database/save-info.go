@@ -39,7 +39,7 @@ func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string,
 	return nil
 }
 
-func GetBridgeDetails() ([]bson.M, error) {
+func GetVMDetails() ([]bson.M, error) {
 	if mongoClient == nil {
 		log.Fatal("MongoDB client not initialized.")
 		return nil, nil
