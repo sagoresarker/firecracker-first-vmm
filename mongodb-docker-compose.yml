@@ -1,0 +1,11 @@
+version: '3.6'
+
+services:
+  mymongodb:
+    image: mongo:4.2.3-bionic
+    ports:
+      - 27021:27017
+    environment:
+      - MONGO_INITDB_DATABASE=firecrackerdb
+      - MONGO_INITDB_ROOT_USERNAME=user
+      - MONGO_INITDB_ROOT_PASSWORD=pass
