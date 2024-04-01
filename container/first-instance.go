@@ -33,7 +33,18 @@ func LaunchFirstInstance(user_id, bridge_name, tapName1, tapName2 string) {
 
 	mac_address1, mac_address2 := networking.GetMACAddress()
 
-	socket_path := user_id + "/tmp/firecracker1.sock"
+	socket_dir := user_id + "/tmp/"
+	socket_path := socket_dir + "firecracker1.sock"
+
+	// Check if the directory exists
+	if _, err := os.Stat(socket_dir); os.IsNotExist(err) {
+		// Create the directory with necessary permissions
+		err := os.MkdirAll(socket_dir, 0755)
+		if err != nil {
+			fmt.Println("Error creating directory:", err)
+			return
+		}
+	}
 
 	database.SaveVMsDetails(user_id, bridge_name, tapName1, tapName2, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, bridge_ip_without_mask.String(), bridge_gateway_ip)
 
