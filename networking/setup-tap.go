@@ -2,56 +2,27 @@ package networking
 
 import (
 	"fmt"
-
-	"github.com/vishvananda/netlink"
+	"os/exec"
 )
 
-func createTap(tapName, bridgeName string) error {
-	// Check if a TAP interface with the same name already exists
-	existingTap, err := netlink.LinkByName(tapName)
-	if err == nil {
-		// TAP interface with the same name exists, delete it
-		if err := netlink.LinkDel(existingTap); err != nil {
-			return fmt.Errorf("failed to delete existing tap: %v", err)
-		}
-	}
+func createTap(tapName string, bridgeName string) error {
 
-	tapLink := &netlink.Tuntap{
-		LinkAttrs: netlink.LinkAttrs{
-			Name: tapName,
-		},
-		Mode: netlink.TUNTAP_MODE_TAP,
-	}
-
-	if err := netlink.LinkAdd(tapLink); err != nil {
+	cmd := exec.Command("sudo", "ip", "tuntap", "add", "dev", tapName, "mode", "tap")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create tap: %v", err)
 	}
 
-	// Bring up the TAP interface
-	if err := netlink.LinkSetUp(tapLink); err != nil {
-		// Clean up the partially created TAP interface
-		netlink.LinkDel(tapLink)
+	cmd = exec.Command("sudo", "ip", "link", "set", "dev", tapName, "up")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to bring up tap: %v", err)
 	}
 
-	// Get the bridge link
-	bridgeLink, err := netlink.LinkByName(bridgeName)
-	if err != nil {
-		// Clean up the created TAP interface
-		netlink.LinkDel(tapLink)
-		return fmt.Errorf("failed to get bridge link: %v", err)
-	}
-
-	// Assign the TAP interface to the bridge
-	if err := netlink.LinkSetMaster(tapLink, bridgeLink.(*netlink.Bridge)); err != nil {
-		// Clean up the created TAP interface
-		netlink.LinkDel(tapLink)
+	cmd = exec.Command("sudo", "ip", "link", "set", "dev", tapName, "master", bridgeName)
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to assign tap to bridge: %v", err)
 	}
 
 	fmt.Printf("Tap %s assigned to Bridge %s\n", tapName, bridgeName)
-
-	netlink.LinkDel(tapLink)
 
 	return nil
 }

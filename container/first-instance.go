@@ -33,7 +33,7 @@ func LaunchFirstInstance(user_id, bridge_name, tapName1, tapName2 string) {
 
 	mac_address1, mac_address2 := networking.GetMACAddress()
 
-	socket_dir := user_id + "/tmp/"
+	socket_dir := "Socketfiles/" + user_id + "/tmp/"
 	socket_path := socket_dir + "firecracker1.sock"
 
 	// Check if the directory exists
@@ -86,7 +86,7 @@ func launchVM(tapName, vmIP, mac_address, bridgeIP, bridgeGatewayIP, socketPath 
 				DriveID:      firecracker.String("1"),
 				IsRootDevice: firecracker.Bool(true),
 				IsReadOnly:   firecracker.Bool(false),
-				PathOnHost:   firecracker.String("files/build/rootfs.ext4"),
+				PathOnHost:   firecracker.String("files/rootfs.ext4"),
 			},
 		},
 		NetworkInterfaces: []firecracker.NetworkInterface{

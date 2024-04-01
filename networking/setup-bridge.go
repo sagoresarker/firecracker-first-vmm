@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 	"net"
-	"os"
+	"os/exec"
 
-	"github.com/coreos/go-iptables/iptables"
 	"github.com/sagoresarker/firecracker-first-vmm/users"
-	"github.com/vishvananda/netlink"
 )
 
 func generateBridgeIPAddress(startRange, endRange string) (string, string, error) {
@@ -65,76 +63,44 @@ func generateValue() (bridgeName string, userID string, bridge_ip_address string
 }
 
 func createBridge(bridgeName string, ipAddress string) error {
-	// Create a new bridge
-	bridge := &netlink.Bridge{
-		LinkAttrs: netlink.LinkAttrs{
-			Name: bridgeName,
-		},
-	}
-	if err := netlink.LinkAdd(bridge); err != nil {
+
+	cmd := exec.Command("sudo", "ip", "link", "add", "name", bridgeName, "type", "bridge")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create bridge: %v", err)
 	}
 
-	// Assign IP address to the bridge
-	addr, err := netlink.ParseAddr(ipAddress)
-	if err != nil {
-		// Clean up the bridge if IP assignment fails
-		if delErr := netlink.LinkDel(bridge); delErr != nil {
-			return fmt.Errorf("failed to delete bridge after IP assignment failure: %v", err)
-		}
-		return fmt.Errorf("failed to parse IP address: %v", err)
-	}
-	if err := netlink.AddrAdd(bridge, addr); err != nil {
-		// Clean up the bridge if IP assignment fails
-		if delErr := netlink.LinkDel(bridge); delErr != nil {
+	cmd = exec.Command("sudo", "ip", "addr", "add", ipAddress, "dev", bridgeName)
+	if err := cmd.Run(); err != nil {
+		// If assigning IP address fails, we need to delete the bridge
+		cmd := exec.Command("sudo", "ip", "link", "delete", bridgeName)
+		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("failed to delete bridge after IP assignment failure: %v", err)
 		}
 		return fmt.Errorf("failed to assign IP address to bridge: %v", err)
 	}
+
 	fmt.Printf("Bridge %s created and assigned IP Address %s\n", bridgeName, ipAddress)
 
-	// Bring up the bridge
-	if err := netlink.LinkSetUp(bridge); err != nil {
+	cmd = exec.Command("sudo", "ip", "link", "set", "dev", bridgeName, "up")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to up the bridge: %v", err)
 	}
 
-	// Setup NAT rule for the bridge
-	ipt, err := iptables.New()
-	if err != nil {
-		return fmt.Errorf("failed to initialize iptables: %v", err)
-	}
-	if err := ipt.AppendUnique("nat", "POSTROUTING", "-o", bridgeName, "-j", "MASQUERADE"); err != nil {
+	cmd = exec.Command("sudo", "iptables", "-t", "nat", "-A", "POSTROUTING", "-o", bridgeName, "-j", "MASQUERADE")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to setup the NAT Rule to the bridge: %v", err)
 	}
 
 	// Enable IP forwarding
-	if err := enableIPForwarding(); err != nil {
+	cmd = exec.Command("sudo", "sysctl", "-w", "net.ipv4.ip_forward=1")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to enable IP forwarding: %v", err)
 	}
 
-	hostInterface := "enp3s0"
-
 	// Add a NAT rule for the host's network interface
-	hostLink, err := netlink.LinkByName(hostInterface)
-	if err != nil {
-		return fmt.Errorf("failed to get host interface: %v", err)
-	}
-	if err := ipt.AppendUnique("nat", "POSTROUTING", "-o", hostLink.Attrs().Name, "-j", "MASQUERADE"); err != nil {
+	cmd = exec.Command("sudo", "iptables", "--table", "nat", "--append", "POSTROUTING", "--out-interface", "enp3s0", "-j", "MASQUERADE")
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to add NAT rule for host's network interface: %v", err)
-	}
-
-	return nil
-}
-
-func enableIPForwarding() error {
-	file, err := os.OpenFile("/proc/sys/net/ipv4/ip_forward", os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	if _, err := file.WriteString("1"); err != nil {
-		return err
 	}
 
 	return nil
