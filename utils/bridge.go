@@ -6,7 +6,6 @@ import (
 
 	"math/rand"
 
-	"github.com/sagoresarker/firecracker-first-vmm/internal/users"
 	"github.com/sagoresarker/firecracker-first-vmm/types"
 )
 
@@ -48,7 +47,7 @@ func GenerateValue() (types.BridgeDetails, error) {
 	startRange := "10.0.0.0"
 	endRange := "10.255.255.255"
 
-	userID := users.GetUserID()
+	userID := getUserID()
 	bridgeName := userID + "-" + "br"
 
 	bridge_ip_address, gateway_ip, err := generateBridgeIPAddress(startRange, endRange)
