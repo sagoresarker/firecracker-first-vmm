@@ -5,8 +5,8 @@ import (
 	"os/exec"
 )
 
+// createTap creates a tap with the given name and assigns it to the bridge
 func createTap(tapName string, bridgeName string) error {
-
 	cmd := exec.Command("sudo", "ip", "tuntap", "add", "dev", tapName, "mode", "tap")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("failed to create tap: %v", err)
@@ -27,6 +27,7 @@ func createTap(tapName string, bridgeName string) error {
 	return nil
 }
 
+// SetupTapNetwork sets up the tap network with the given bridge name
 func SetupTapNetwork(bridgeName string) (string, string, error) {
 	fmt.Println("Setting up tap")
 

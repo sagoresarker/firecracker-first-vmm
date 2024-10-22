@@ -1,4 +1,4 @@
-package container
+package runner
 
 import (
 	"context"
@@ -11,8 +11,9 @@ import (
 
 	"github.com/firecracker-microvm/firecracker-go-sdk"
 	models "github.com/firecracker-microvm/firecracker-go-sdk/client/models"
-	"github.com/sagoresarker/firecracker-first-vmm/database"
-	"github.com/sagoresarker/firecracker-first-vmm/networking"
+	"github.com/sagoresarker/firecracker-first-vmm/internal/database"
+	"github.com/sagoresarker/firecracker-first-vmm/internal/networking"
+	"github.com/sagoresarker/firecracker-first-vmm/types"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,23 +47,45 @@ func LaunchFirstInstance(user_id, bridge_name, tapName1, tapName2 string) {
 		}
 	}
 
-	database.SaveVMsDetails(user_id, bridge_name, tapName1, tapName2, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, bridge_ip_without_mask.String(), bridge_gateway_ip)
+	vmmDetails := types.VMMDetails{
+		UserID:          user_id,
+		BridgeName:      bridge_name,
+		TapName1:        tapName1,
+		TapName2:        tapName2,
+		VM1Eth0IP:       vm1_eth0_ip,
+		VM2Eth0IP:       vm2_eth0_ip,
+		MacAddress1:     mac_address1,
+		MacAddress2:     mac_address2,
+		BridgeIPAddress: bridge_ip_without_mask.String(),
+		BridgeGatewayIP: bridge_gateway_ip,
+	}
 
-	launchVM(tapName1, vm1_eth0_ip, mac_address1, bridge_ip_without_mask.String(), bridge_gateway_ip, socket_path)
+	database.SaveVMsDetails(vmmDetails)
+
+	launcherDetails := types.LauncherDetails{
+		TapName:         tapName1,
+		VMIP:            vm1_eth0_ip,
+		MacAddress:      mac_address1,
+		BridgeIP:        bridge_ip_without_mask.String(),
+		BridgeGatewayIP: bridge_gateway_ip,
+		SocketPath:      socket_path,
+	}
+
+	launchVM(launcherDetails)
 
 }
 
-func launchVM(tapName, vmIP, mac_address, bridgeIP, bridgeGatewayIP, socketPath string) {
+func launchVM(launcherDetails types.LauncherDetails) {
 
-	fmt.Println("Launching VM with tap:", tapName)
+	fmt.Println("Launching VM with tap:", launcherDetails.TapName)
 
-	vm_eth0_ip_ipv4 := net.ParseIP(vmIP)
+	vm_eth0_ip_ipv4 := net.ParseIP(launcherDetails.VMIP)
 	if vm_eth0_ip_ipv4 == nil {
 		fmt.Println("Error parsing VM IP address")
 		return
 	}
 
-	bridge_gateway_ip_ipv4 := net.ParseIP(bridgeGatewayIP)
+	bridge_gateway_ip_ipv4 := net.ParseIP(launcherDetails.BridgeGatewayIP)
 	fmt.Printf("Bridge Gateway IP: %s and Type %s\n", bridge_gateway_ip_ipv4, reflect.TypeOf(bridge_gateway_ip_ipv4).String())
 	if bridge_gateway_ip_ipv4 == nil {
 		fmt.Println("Error parsing bridge gateway IP address")
@@ -70,9 +93,9 @@ func launchVM(tapName, vmIP, mac_address, bridgeIP, bridgeGatewayIP, socketPath 
 	}
 
 	cfg := firecracker.Config{
-		SocketPath:      socketPath,
-		LogFifo:         socketPath + ".log",
-		MetricsFifo:     socketPath + "-metrics",
+		SocketPath:      launcherDetails.SocketPath,
+		LogFifo:         launcherDetails.SocketPath + ".log",
+		MetricsFifo:     launcherDetails.SocketPath + "-metrics",
 		LogLevel:        "Debug",
 		KernelImagePath: "files/vmlinux",
 		KernelArgs:      "ro console=ttyS0 reboot=k panic=1 pci=off",
@@ -92,14 +115,14 @@ func launchVM(tapName, vmIP, mac_address, bridgeIP, bridgeGatewayIP, socketPath 
 		NetworkInterfaces: []firecracker.NetworkInterface{
 			{
 				StaticConfiguration: &firecracker.StaticNetworkConfiguration{
-					MacAddress:  mac_address,
-					HostDevName: tapName,
+					MacAddress:  launcherDetails.MacAddress,
+					HostDevName: launcherDetails.TapName,
 					IPConfiguration: &firecracker.IPConfiguration{
 						IPAddr: net.IPNet{
 							IP:   vm_eth0_ip_ipv4,
 							Mask: net.CIDRMask(24, 32),
 						},
-						Gateway:     net.ParseIP(bridgeIP),
+						Gateway:     net.ParseIP(launcherDetails.BridgeIP),
 						IfName:      "eth0",
 						Nameservers: []string{"8.8.8.8", "8.8.4.4"},
 					},

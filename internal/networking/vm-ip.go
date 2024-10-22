@@ -6,13 +6,11 @@ import (
 )
 
 func GetVMIPs(bridgeIP string) (string, string, error) {
-	// Parse the bridge IP address
 	ip := net.ParseIP(bridgeIP)
 	if ip == nil {
 		return "", "", fmt.Errorf("invalid bridge IP address")
 	}
 
-	// Convert the IP address to IPv4
 	ip = ip.To4()
 
 	// Ensure the IP address is in the correct range for a /24 subnet
@@ -20,7 +18,6 @@ func GetVMIPs(bridgeIP string) (string, string, error) {
 		return "", "", fmt.Errorf("bridge IP address is not in the correct range for a /24 subnet")
 	}
 
-	// Get the network address and subnet mask
 	network := ip.Mask(net.CIDRMask(24, 32))
 
 	// Get the first two IP addresses in the subnet excluding the network address and broadcast address

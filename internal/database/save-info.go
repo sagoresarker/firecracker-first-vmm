@@ -5,10 +5,12 @@ import (
 	"log"
 	"time"
 
+	"github.com/sagoresarker/firecracker-first-vmm/types"
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string, vm1_eth0_ip, vm2_eth0_ip, mac_address1, mac_address2, Bridge_ipAddress, bridge_gateway_ip string) error {
+// SaveVMsDetails saves the details of the VMs to the MongoDB database
+func SaveVMsDetails(vmmDetails types.VMMDetails) error {
 	if mongoClient == nil {
 		log.Fatal("MongoDB client not initialized.")
 		return nil
@@ -16,16 +18,16 @@ func SaveVMsDetails(userID, bridgeName string, tapName1 string, tapName2 string,
 
 	collection := mongoClient.Database("firecrackerdb").Collection("vm-info")
 	document := bson.D{
-		{Key: "userID", Value: userID},
-		{Key: "bridgeName", Value: bridgeName},
-		{Key: "tapName1", Value: tapName1},
-		{Key: "tapName2", Value: tapName2},
-		{Key: "vm1_eth0_ip", Value: vm1_eth0_ip},
-		{Key: "vm2_eth0_ip", Value: vm2_eth0_ip},
-		{Key: "mac_address1", Value: mac_address1},
-		{Key: "mac_address2", Value: mac_address2},
-		{Key: "Bridge_ipAddress", Value: Bridge_ipAddress},
-		{Key: "bridge_gateway_ip", Value: bridge_gateway_ip},
+		{Key: "userID", Value: vmmDetails.UserID},
+		{Key: "bridgeName", Value: vmmDetails.BridgeName},
+		{Key: "tapName1", Value: vmmDetails.TapName1},
+		{Key: "tapName2", Value: vmmDetails.TapName2},
+		{Key: "vm1_eth0_ip", Value: vmmDetails.VM1Eth0IP},
+		{Key: "vm2_eth0_ip", Value: vmmDetails.VM2Eth0IP},
+		{Key: "mac_address1", Value: vmmDetails.MacAddress1},
+		{Key: "mac_address2", Value: vmmDetails.MacAddress2},
+		{Key: "Bridge_ipAddress", Value: vmmDetails.BridgeIPAddress},
+		{Key: "bridge_gateway_ip", Value: vmmDetails.BridgeGatewayIP},
 		{Key: "created_at", Value: time.Now()},
 	}
 

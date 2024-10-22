@@ -11,6 +11,7 @@ import (
 
 var mongoClient *mongo.Client
 
+// InitMongoDB initializes the MongoDB client
 func InitMongoDB() {
 	connectionString := "mongodb://user:pass@localhost:27021/firecrackerdb?authSource=admin&authMechanism=SCRAM-SHA-256"
 
